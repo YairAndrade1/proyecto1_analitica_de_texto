@@ -1,1 +1,18 @@
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pytest_cache/
+.ipynb_checkpoints/
+
+# macOS / VS Code
+.DS_Store
+.vscode/
+*.log
+
+# Datos temporales
 .env
+*.tmp
