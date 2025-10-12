@@ -1,0 +1,10 @@
+{
+  "features": [
+    "textos"
+  ],
+  "target": "labels",
+  "required_columns": [
+    "textos",
+    "labels"
+  ]
+}

@@ -1,0 +1,71 @@
+{
+  "version": "1.0",
+  "dataset": {
+    "feature_name": "textos",
+    "feature_aliases": ["Textos_espanol"],
+    "target_name": "labels",
+    "allowed_labels": ["ODS1", "ODS3", "ODS4"],
+    "dtypes": { "textos": "string", "labels": "string" }
+  },
+  "contracts": {
+    "predict": {
+      "body": {
+        "type": "object",
+        "required": ["instances"],
+        "properties": {
+          "instances": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "anyOf": [{ "required": ["textos"] }, { "required": ["Textos_espanol"] }],
+              "properties": { "textos": { "type": "string" }, "Textos_espanol": { "type": "string" } },
+              "additionalProperties": true
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "retrain": {
+      "body": {
+        "type": "object",
+        "required": ["instances"],
+        "properties": {
+          "retrain_strategy": { "type": "string", "enum": ["full", "ensemble", "incremental"] },
+          "instances": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "anyOf": [{ "required": ["textos", "label"] }, { "required": ["Textos_espanol", "label"] }],
+              "properties": { "textos": { "type": "string" }, "Textos_espanol": { "type": "string" }, "label": { "type": "string" } },
+              "additionalProperties": true
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "retrain_legacy": {
+      "body": {
+        "type": "object",
+        "required": ["training_data"],
+        "properties": {
+          "retrain_strategy": { "type": "string", "enum": ["full", "ensemble", "incremental"] },
+          "training_data": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": ["textos", "labels"],
+              "properties": { "textos": { "type": "string" }, "labels": { "type": "string" } },
+              "additionalProperties": true
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  }
+}
