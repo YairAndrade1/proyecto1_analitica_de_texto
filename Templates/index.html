@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Plataforma ODS — Predicción</title>
+  <style>
+    :root{ --bg:#f7f8fb; --card:#fff; --line:#e5e7eb; --txt:#0f172a; --muted:#6b7280; --primary:#2563eb; }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--txt);font-family:Inter,system-ui,Arial}
+    header{background:#0b1220;color:#e5e7eb;padding:14px 20px;display:flex;align-items:center;gap:16px}
+    header h1{font-size:18px;margin:0;font-weight:600}
+    nav a{color:#cbd5e1;text-decoration:none;margin-left:18px}
+    main{max-width:980px;margin:28px auto;padding:0 18px}
+    .row{display:flex;gap:18px;flex-wrap:wrap}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}
+    .w50{flex:1 1 480px}
+    textarea{width:100%;height:130px;padding:12px;border:1px solid var(--line);border-radius:10px;font-size:14px}
+    .btn{padding:.7rem 1rem;border:0;border-radius:10px;cursor:pointer;background:var(--primary);color:#fff;font-weight:600}
+    .sub{color:var(--muted);font-size:13px}
+    .result{display:flex;flex-direction:column;gap:10px}
+    .mono{font-family:ui-monospace,Menlo,Consolas,monospace}
+    .chip{display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:6px 10px;background:#eef2ff;font-weight:600}
+    .ods1{background:#fee2e2;color:#7f1d1d;border:1px solid #fecaca}
+    .ods3{background:#dcfce7;color:#064e3b;border:1px solid #bbf7d0}
+    .ods4{background:#fef3c7;color:#7c2d12;border:1px solid #fde68a}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Plataforma ODS</h1>
+    <nav>
+      <a href="/">Predicción</a>
+      <a href="/expert">Reentrenar</a>
+    </nav>
+  </header>
+
+  <main>
+    <div class="row">
+      <section class="card w50">
+        <h2 style="margin:0 0 6px 0">Ingresar textos</h2>
+        <p class="sub">Escribe uno o más textos (uno por línea) y presiona <b>Obtener Predicción</b>.</p>
+        <textarea id="txts" placeholder="vacunación en el barrio&#10;clases de primaria en zona rural"></textarea>
+        <div style="margin-top:10px">
+          <button class="btn" onclick="predict()">Obtener Predicción</button>
+        </div>
+      </section>
+
+      <section class="card w50">
+        <h2 style="margin:0 0 6px 0">Resultados</h2>
+        <div id="out" class="result sub">Sin resultados aún.</div>
+      </section>
+    </div>
+  </main>
+
+<script>
+const ODS_NAME = { ODS1:"Fin de la Pobreza", ODS3:"Salud y Bienestar", ODS4:"Educación de Calidad" };
+
+function chip(ods){
+  const cls = (ods||'').toLowerCase();
+  const name = ODS_NAME[ods] || ods || 'N/A';
+  return `<span class="chip ${cls}">${ods} · ${name}</span>`;
+}
+
+async function predict(){
+  const lines = document.getElementById('txts').value
+    .split('\n').map(x=>x.trim()).filter(Boolean);
+  if(!lines.length){ alert('Ingresa al menos un texto'); return; }
+
+  // Construye el body para /predict
+  const instances = lines.map(t => ({ Textos_espanol: t }));
+  const res = await fetch('/predict', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({instances})
+  });
+  const data = await res.json();
+  if(!res.ok){ alert(data.error || 'Error'); return; }
+
+  const out = document.getElementById('out');
+  out.classList.remove('sub');
+  out.innerHTML = lines.map((txt, i) => `
+    <div class="card" style="padding:12px">
+      <div><b>Texto:</b> <span class="mono">${txt}</span></div>
+      <div style="margin-top:6px"><b>ODS:</b> ${chip(data.predictions[i])}</div>
+    </div>
+  `).join('');
+}
+</script>
+</body>
+</html>

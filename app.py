@@ -1,10 +1,9 @@
 # app.py
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 import pandas as pd, numpy as np, os, json, joblib
 from datetime import datetime
 from models.model_pipeline import retrain_strategies
-
 import numpy as np
 import re
 import nltk
@@ -200,6 +199,15 @@ def model_sanity():
         return jsonify({"ok": True}), 200
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
+    
+@app.route("/")
+def home():
+    return render_template("index.html")
+
+@app.route("/expert")
+def expert():
+    return render_template("expert.html")
+
 
 
 if __name__ == "__main__":

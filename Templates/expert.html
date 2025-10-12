@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Plataforma ODS — Reentrenar</title>
+  <style>
+    :root{ --bg:#f7f8fb; --card:#fff; --line:#e5e7eb; --txt:#0f172a; --muted:#6b7280; --primary:#2563eb; }
+    body{margin:0;background:var(--bg);color:var(--txt);font-family:Inter,system-ui,Arial}
+    header{background:#0b1220;color:#e5e7eb;padding:14px 20px;display:flex;align-items:center;gap:16px}
+    header h1{font-size:18px;margin:0;font-weight:600}
+    nav a{color:#cbd5e1;text-decoration:none;margin-left:18px}
+    main{max-width:1050px;margin:28px auto;padding:0 18px}
+    .row{display:flex;gap:18px;flex-wrap:wrap}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}
+    .w50{flex:1 1 520px}
+    textarea{width:100%;height:180px;padding:12px;border:1px solid var(--line);border-radius:10px;font-size:14px}
+    .btn{padding:.7rem 1rem;border:0;border-radius:10px;cursor:pointer;background:#16a34a;color:#fff;font-weight:600}
+    .muted{color:var(--muted)}
+    pre{background:#f6f6f6;border:1px solid var(--line);padding:12px;border-radius:12px;overflow:auto}
+    select{padding:.5rem;border-radius:10px;border:1px solid var(--line)}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Plataforma ODS</h1>
+    <nav>
+      <a href="/">Predicción</a>
+      <a href="/expert">Reentrenar</a>
+    </nav>
+  </header>
+
+  <main>
+    <div class="row">
+      <section class="card w50">
+        <h2 style="margin:0 0 8px 0">Trigger Model Retraining</h2>
+        <p class="muted">Pega muestras etiquetadas en JSON Lines (una por línea): <code>{"Textos_espanol":"...","label":"ODS3"}</code></p>
+        <textarea id="lines" placeholder='{"Textos_espanol": "campañas de vacunación", "label":"ODS3"}&#10;{"Textos_espanol": "docentes y bibliotecas", "label":"ODS4"}&#10;{"Textos_espanol": "transferencias monetarias", "label":"ODS1"}'></textarea>
+        <div style="display:flex;gap:10px;align-items:center;margin-top:10px">
+          <label>Estrategia:
+            <select id="strategy">
+              <option value="full">full (desde cero)</option>
+              <option value="ensemble">ensemble (combinar con histórico)</option>
+              <option value="incremental">incremental (si tu API la dejó activa)</option>
+            </select>
+          </label>
+          <button class="btn" onclick="retrain()">Reentrenar Modelo</button>
+        </div>
+      </section>
+
+      <section class="card w50">
+        <h3 style="margin:0 0 8px 0">Resultados / Métricas</h3>
+        <pre id="out" class="muted">Sin ejecutar…</pre>
+      </section>
+    </div>
+  </main>
+
+<script>
+async function retrain(){
+  const txt = document.getElementById('lines').value.trim();
+  if(!txt){ alert('Ingresa al menos una línea'); return; }
+  const strategy = document.getElementById('strategy').value;
+  const instances = [];
+  for(const line of txt.split('\n')){
+    try{ instances.push(JSON.parse(line)); }
+    catch(e){ alert('JSON inválido: '+line); return; }
+  }
+  const res = await fetch('/retrain', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ retrain_strategy: strategy, instances })
+  });
+  const data = await res.json();
+  document.getElementById('out').textContent = JSON.stringify(data, null, 2);
+}
+</script>
+</body>
+</html>
