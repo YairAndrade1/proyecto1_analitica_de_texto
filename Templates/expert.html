@@ -1,23 +1,44 @@
 <!doctype html>
 <html lang="es">
 <head>
-  <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Plataforma ODS — Reentrenar</title>
   <style>
-    :root{ --bg:#f7f8fb; --card:#fff; --line:#e5e7eb; --txt:#0f172a; --muted:#6b7280; --primary:#2563eb; }
+    :root{ --bg:#f7f8fb; --card:#fff; --line:#e5e7eb; --txt:#0f172a; --muted:#6b7280; --primary:#16a34a; --accent:#2563eb; }
+    *{box-sizing:border-box}
     body{margin:0;background:var(--bg);color:var(--txt);font-family:Inter,system-ui,Arial}
     header{background:#0b1220;color:#e5e7eb;padding:14px 20px;display:flex;align-items:center;gap:16px}
     header h1{font-size:18px;margin:0;font-weight:600}
     nav a{color:#cbd5e1;text-decoration:none;margin-left:18px}
-    main{max-width:1050px;margin:28px auto;padding:0 18px}
-    .row{display:flex;gap:18px;flex-wrap:wrap}
+    nav a.active{color:#fff;font-weight:700}
+    main{max-width:980px;margin:28px auto;padding:0 18px}
     .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}
-    .w50{flex:1 1 520px}
-    textarea{width:100%;height:180px;padding:12px;border:1px solid var(--line);border-radius:10px;font-size:14px}
-    .btn{padding:.7rem 1rem;border:0;border-radius:10px;cursor:pointer;background:#16a34a;color:#fff;font-weight:600}
-    .muted{color:var(--muted)}
-    pre{background:#f6f6f6;border:1px solid var(--line);padding:12px;border-radius:12px;overflow:auto}
-    select{padding:.5rem;border-radius:10px;border:1px solid var(--line)}
+    .row{display:grid;grid-template-columns:1fr;gap:18px}
+    .sub{color:var(--muted);font-size:13px}
+    textarea{width:100%;min-height:160px;resize:none;border:1px solid var(--line);border-radius:12px;padding:12px;font-size:14px;line-height:1.35;background:#fff}
+    .muted{color:#6b7280}
+    .btn{display:inline-flex;align-items:center;gap:8px;padding:.7rem 1rem;border:0;border-radius:12px;cursor:pointer;background:var(--primary);color:#fff;font-weight:700}
+    .btn:disabled{opacity:.7;cursor:wait}
+    .btn-secondary{background:#eef2ff;color:#1f2937;border:1px solid #dbe3ff}
+    select{border:1px solid var(--line);border-radius:10px;padding:.55rem .7rem;background:#fff}
+    .line{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .right{margin-left:auto}
+    .pill{display:inline-block;background:#f3f4f6;border:1px solid #e5e7eb;border-radius:999px;padding:4px 10px;font-size:12px}
+    .hidden{display:none}
+    .kpi-grid{display:grid;grid-template-columns:repeat(3,minmax(180px,1fr));gap:14px;margin-top:8px}
+    .kpi{border:1px solid #e5e7eb;border-radius:12px;padding:14px;background:#fff}
+    .kpi-label{color:#6b7280;font-size:12px}
+    .kpi-value{font-size:28px;font-weight:800;line-height:1.1;margin:4px 0 8px}
+    .kpi-bar{height:8px;background:#f3f4f6;border-radius:999px;overflow:hidden}
+    .kpi-bar span{display:block;height:100%;background:var(--accent)}
+    .meta{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px}
+    .raw{background:#f8fafc;border:1px dashed #e5e7eb;border-radius:10px;padding:10px;margin-top:12px;max-height:260px;overflow:auto}
+    .err{color:#991b1b;background:#fee2e2;border:1px solid #fecaca;padding:10px;border-radius:10px;margin-top:10px}
+    .ok{color:#065f46;background:#ecfdf5;border:1px solid #a7f3d0;padding:10px;border-radius:10px;margin-top:10px}
+    @media (max-width:720px){ .kpi-grid{grid-template-columns:1fr} .meta{grid-template-columns:1fr} }
+    .spinner{width:14px;height:14px;border:2px solid #ffffff99;border-top-color:#fff;border-radius:50%;animation:spin .9s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
   </style>
 </head>
 <body>
@@ -25,52 +46,192 @@
     <h1>Plataforma ODS</h1>
     <nav>
       <a href="/">Predicción</a>
-      <a href="/expert">Reentrenar</a>
+      <a class="active" href="/expert">Reentrenar</a>
     </nav>
   </header>
 
-  <main>
-    <div class="row">
-      <section class="card w50">
-        <h2 style="margin:0 0 8px 0">Trigger Model Retraining</h2>
-        <p class="muted">Pega muestras etiquetadas en JSON Lines (una por línea): <code>{"Textos_espanol":"...","label":"ODS3"}</code></p>
-        <textarea id="lines" placeholder='{"Textos_espanol": "campañas de vacunación", "label":"ODS3"}&#10;{"Textos_espanol": "docentes y bibliotecas", "label":"ODS4"}&#10;{"Textos_espanol": "transferencias monetarias", "label":"ODS1"}'></textarea>
-        <div style="display:flex;gap:10px;align-items:center;margin-top:10px">
-          <label>Estrategia:
-            <select id="strategy">
-              <option value="full">full (desde cero)</option>
-              <option value="ensemble">ensemble (combinar con histórico)</option>
-              <option value="incremental">incremental (si tu API la dejó activa)</option>
-            </select>
-          </label>
-          <button class="btn" onclick="retrain()">Reentrenar Modelo</button>
-        </div>
-      </section>
+  <main class="row">
+    <!-- Config / Input -->
+    <section class="card">
+      <h2 style="margin:0 0 6px 0">Trigger Model Retraining</h2>
+      <p class="sub">Pega muestras etiquetadas. Acepta <b>JSON Lines</b> (una por línea) o <b>Array JSON</b>. Cada
+      objeto debe tener <code>Textos_espanol</code> y <code>label</code> (ODS1/ODS3/ODS4).</p>
 
-      <section class="card w50">
-        <h3 style="margin:0 0 8px 0">Resultados / Métricas</h3>
-        <pre id="out" class="muted">Sin ejecutar…</pre>
-      </section>
-    </div>
+      <div class="line" style="margin:8px 0 6px">
+        <span id="lineCounter" class="pill">0 líneas</span>
+        <div class="right">
+          <button class="btn-secondary" id="btnExample" type="button">Cargar ejemplo</button>
+        </div>
+      </div>
+
+      <textarea id="lines" placeholder='{"Textos_espanol":"...","label":"ODS3"}'></textarea>
+
+      <div id="msg" class="hidden"></div>
+
+      <div class="line" style="margin-top:10px">
+        <div>
+          <label class="sub" for="strategy">Estrategia:&nbsp;</label>
+          <select id="strategy">
+            <option value="full">full (desde cero)</option>
+            <option value="ensemble">ensemble</option>
+            <option value="incremental">incremental</option>
+          </select>
+        </div>
+        <div class="right">
+          <button class="btn" id="btnRun" type="button">
+            <span class="spinner hidden" id="spin"></span>
+            <span id="btnTxt">Reentrenar Modelo</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Results -->
+    <section class="card">
+      <h2 style="margin:0 0 8px 0">Resultados / Métricas</h2>
+
+      <div id="metricsWrap" class="hidden">
+        <div class="kpi-grid">
+          <div class="kpi">
+            <div class="kpi-label">Precision</div>
+            <div class="kpi-value" id="kpi-precision">—</div>
+            <div class="kpi-bar"><span id="bar-precision" style="width:0%"></span></div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Recall</div>
+            <div class="kpi-value" id="kpi-recall">—</div>
+            <div class="kpi-bar"><span id="bar-recall" style="width:0%"></span></div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">F1-Score</div>
+            <div class="kpi-value" id="kpi-f1">—</div>
+            <div class="kpi-bar"><span id="bar-f1" style="width:0%"></span></div>
+          </div>
+        </div>
+
+        <div class="meta">
+          <div><b>Estrategia:</b> <span id="meta-strategy">—</span></div>
+          <div><b>Guardado como:</b> <span id="meta-saved">—</span></div>
+          <div><b>Instancias:</b> <span id="meta-n">—</span></div>
+          <div><b>Fecha/Hora:</b> <span id="meta-ts">—</span></div>
+        </div>
+      </div>
+
+      <pre id="raw" class="raw sub">Sin ejecutar…</pre>
+    </section>
   </main>
 
 <script>
-async function retrain(){
-  const txt = document.getElementById('lines').value.trim();
-  if(!txt){ alert('Ingresa al menos una línea'); return; }
-  const strategy = document.getElementById('strategy').value;
-  const instances = [];
-  for(const line of txt.split('\n')){
-    try{ instances.push(JSON.parse(line)); }
-    catch(e){ alert('JSON inválido: '+line); return; }
-  }
-  const res = await fetch('/retrain', {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ retrain_strategy: strategy, instances })
-  });
-  const data = await res.json();
-  document.getElementById('out').textContent = JSON.stringify(data, null, 2);
+/* ---------- Utilidades UI ---------- */
+const $ = sel => document.querySelector(sel);
+function pct(x){ if(x==null||isNaN(x)) return "—"; return (x*100).toFixed(1)+"%"; }
+function setText(id, v){ const el = $("#"+id); if(el) el.textContent = v; }
+function setBar(id, x){ const el=$("#"+id); if(!el) return; const w=Math.max(0,Math.min(100,Math.round((x||0)*100))); el.style.width = w+"%"; }
+function showMsg(type, text){
+  const box = $("#msg"); box.className = type==="err" ? "err" : "ok"; box.textContent = text; box.classList.remove("hidden");
+  setTimeout(()=>box.classList.add("hidden"), 3500);
 }
+
+/* ---------- Textarea auto-resize + contador ---------- */
+const ta = $("#lines"), counter = $("#lineCounter");
+function autoResize(){
+  ta.style.height = "auto";
+  ta.style.height = Math.min(Math.max(160, ta.scrollHeight), 520) + "px";
+  const n = ta.value ? ta.value.split("\n").filter(Boolean).length : 0;
+  counter.textContent = n + (n===1 ? " línea" : " líneas");
+}
+ta.addEventListener("input", autoResize);
+
+/* ---------- Ejemplo ---------- */
+$("#btnExample").addEventListener("click", ()=>{
+  const sample = [
+    {"Textos_espanol":"La definición de privación está basada en el marco de los derechos de la niñez...","label":"ODS1"},
+    {"Textos_espanol":"La mayoría de los programas de protección social en Ghana aspiran a ser universales...","label":"ODS1"},
+    {"Textos_espanol":"La libertad de los pacientes para elegir médicos de cabecera y especialistas...","label":"ODS3"},
+    {"Textos_espanol":"El análisis de patrones de consumo de sustancias en estudiantes de secundaria...","label":"ODS3"},
+    {"Textos_espanol":"La rúbrica Studio Thinking estaba probablemente más enfocada...","label":"ODS4"},
+    {"Textos_espanol":"La rúbrica de los cinco hábitos creativos de la mente se utilizó como herramienta...","label":"ODS4"}
+  ];
+  ta.value = sample.map(o => JSON.stringify(o)).join("\n");
+  autoResize();
+});
+
+/* ---------- Parser JSONL/Array ---------- */
+function parseInstances(raw){
+  if(!raw.trim()) return [];
+  // ¿Array JSON?
+  if(raw.trim().startsWith("[")){
+    const arr = JSON.parse(raw);
+    if(!Array.isArray(arr)) throw new Error("El JSON debe ser un array de objetos.");
+    return arr;
+  }
+  // JSON Lines
+  const lines = raw.split("\n").map(s=>s.trim()).filter(Boolean);
+  return lines.map((l,i)=>{
+    try { return JSON.parse(l); }
+    catch(e){ throw new Error(`Línea ${i+1}: ${e.message}`); }
+  });
+}
+function validateInstances(arr){
+  if(!arr.length) throw new Error("Debes ingresar al menos una instancia.");
+  for(let i=0;i<arr.length;i++){
+    const it = arr[i] || {};
+    if(!("Textos_espanol" in it)) throw new Error(`Línea ${i+1}: falta 'Textos_espanol'.`);
+    if(!("label" in it)) throw new Error(`Línea ${i+1}: falta 'label'.`);
+  }
+}
+
+/* ---------- Pinta KPIs ---------- */
+function paintMetrics(data){
+  const m = (data && data.metrics) || {};
+  setText('kpi-precision', pct(m.precision));
+  setText('kpi-recall', pct(m.recall));
+  setText('kpi-f1', pct(m.f1_score));
+  setBar('bar-precision', m.precision);
+  setBar('bar-recall', m.recall);
+  setBar('bar-f1', m.f1_score);
+  setText('meta-strategy', data.strategy_used || '—');
+  setText('meta-saved', data.saved_as || data.saved_path || '—');
+  setText('meta-n', (data.training_instances!=null ? String(data.training_instances) : '—'));
+  setText('meta-ts', data.timestamp || '—');
+  $("#metricsWrap").classList.remove("hidden");
+}
+
+/* ---------- Llama API /retrain ---------- */
+async function retrain(){
+  const btn = $("#btnRun"), spin=$("#spin"), btnTxt=$("#btnTxt");
+  try{
+    btn.disabled = true; spin.classList.remove("hidden"); btnTxt.textContent="Ejecutando…";
+
+    const strategy = $("#strategy").value;
+    let instances = parseInstances(ta.value);
+    validateInstances(instances);
+
+    const resp = await fetch('/retrain', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ retrain_strategy: strategy, instances })
+    });
+    const data = await resp.json();
+    $("#raw").textContent = JSON.stringify(data, null, 2);
+
+    if(!resp.ok){
+      showMsg("err", data.error || "Error en reentrenamiento");
+      $("#metricsWrap").classList.add("hidden");
+      return;
+    }
+    paintMetrics(data);
+    showMsg("ok", data.message || "Reentrenamiento finalizado");
+
+  } catch(err){
+    showMsg("err", err.message || String(err));
+  } finally {
+    btn.disabled = false; spin.classList.add("hidden"); btnTxt.textContent="Reentrenar Modelo";
+  }
+}
+$("#btnRun").addEventListener("click", retrain);
+
+// Ajuste inicial
+autoResize();
 </script>
 </body>
 </html>
