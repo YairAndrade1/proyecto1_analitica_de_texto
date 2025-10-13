@@ -51,6 +51,20 @@
         <div id="out" class="result sub">Sin resultados aún.</div>
       </section>
     </div>
+    <section class="card" style="margin-top:28px;max-width:700px">
+      <h3 style="margin:0 0 8px 0">¿Cómo interpretar el Score?</h3>
+      <div style="font-size:15px;color:var(--muted)">
+        El <b>Score</b> indica la confianza del modelo SVM sobre la predicción realizada:
+        <ul style="margin:12px 0 0 20px;line-height:1.6">
+          <li><b>Score positivo alto:</b> El modelo está muy seguro de la predicción. El texto tiene características claras de la clase asignada.</li>
+          <li><b>Score cercano a cero:</b> El modelo tiene dudas. El texto está en una zona ambigua entre clases.</li>
+          <li><b>Score negativo:</b> El modelo no está convencido de ninguna opción, pero eligió la "menos incorrecta" entre las disponibles.</li>
+        </ul>
+        <div style="margin-top:12px;padding:8px;background:#f8f9fa;border-radius:6px;border-left:3px solid var(--primary)">
+          <small><b>Nota técnica:</b> El score representa la distancia del texto al hiperplano de separación del modelo SVM. Mayor distancia absoluta indica mayor certeza en la decisión.</small>
+        </div>
+      </div>
+    </section>
   </main>
 
 <script>
@@ -78,12 +92,19 @@ async function predict(){
 
   const out = document.getElementById('out');
   out.classList.remove('sub');
-  out.innerHTML = lines.map((txt, i) => `
-    <div class="card" style="padding:12px">
-      <div><b>Texto:</b> <span class="mono">${txt}</span></div>
-      <div style="margin-top:6px"><b>ODS:</b> ${chip(data.predictions[i])}</div>
-    </div>
-  `).join('');
+  out.innerHTML = lines.map((txt, i) => {
+    const rawScore = data.scores && data.scores[i] !== undefined && data.scores[i] !== null
+      ? Number(data.scores[i]).toFixed(2)
+      : 'N/A';
+    
+    return `
+      <div class="card" style="padding:12px">
+        <div><b>Texto:</b> <span class="mono">${txt}</span></div>
+        <div style="margin-top:6px"><b>ODS:</b> ${chip(data.predictions[i])}</div>
+        <div style="margin-top:6px"><b>Score:</b> <span class="mono">${rawScore}</span></div>
+      </div>
+    `;
+  }).join('');
 }
 </script>
 </body>

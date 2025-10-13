@@ -153,7 +153,18 @@ def predict():
         X = df["textos"]
         preds = model.predict(X)
         preds = [canon_label(p) for p in preds]
-        return jsonify({"predictions": preds, "count": len(preds), "timestamp": datetime.now().isoformat()}), 200
+        # Obtener confianza usando decision_function
+        scores = model.decision_function(X)
+        if hasattr(scores, 'shape') and len(scores.shape) == 2:
+            score_list = [float(scores[i, np.argmax(scores[i])]) for i in range(scores.shape[0])]
+        else:
+            score_list = [float(s) for s in scores]
+        return jsonify({
+            "predictions": preds,
+            "scores": score_list,
+            "count": len(preds),
+            "timestamp": datetime.now().isoformat()
+        }), 200    
     except Exception as e:
         return jsonify({"error": f"Prediction failed: {e}"}), 500
 
