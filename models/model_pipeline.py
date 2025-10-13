@@ -71,6 +71,7 @@ def compute_metrics(model, validation_data_path="Datos_etapa 2.xlsx") -> Dict[st
     pm, rm, fm, _ = precision_recall_fscore_support(y_true, y_pred, average="macro", zero_division=0)
     return {"precision": float(pm), "recall": float(rm), "f1_score": float(fm)}
 
+# Crear nuevo pipeline SVM con TF-IDF sin entrenamiento
 def create_pipeline_svm(tfidf_params: Optional[Dict] = None) -> Pipeline:
     tfidf_defaults = dict(
         strip_accents="unicode",
@@ -127,9 +128,7 @@ class SimpleEnsemble:
     @property
     def steps(self): return [("ensemble", self)]
 
-def incremental_retrain(current_model, X_new, y_new):
-    raise ValueError("La estrategia 'incremental' no es compatible con LinearSVC. Use 'full' o 'ensemble'.")
-
+# Estrategia 1: reentrenamiento desde cero solo con nuevos datos
 def full_retrain(current_model, X_new, y_new):
     fresh = create_pipeline_svm()
     X_df = X_new if isinstance(X_new, pd.DataFrame) else pd.DataFrame({"textos": X_new})
@@ -138,6 +137,7 @@ def full_retrain(current_model, X_new, y_new):
     y_pred = fresh.predict(X_df)
     return fresh, compute_metrics(fresh)
 
+# Estrategia 2: votación entre modelo histórico y uno nuevo
 def ensemble_retrain(current_model, X_new, y_new):
     fresh, _ = full_retrain(None, X_new, y_new)
     if current_model is None:
@@ -149,19 +149,10 @@ def ensemble_retrain(current_model, X_new, y_new):
     y_pred = ens.predict(X_df)
     return ens, compute_metrics(ens)
 
+# Estrategia 3: reentrenamiento desde cero con datos históricos + nuevos
 def cumulative_retrain(current_model, X_new, y_new, history_path="docs/dataset_balanceado_etapa2.csv"):
     """
     Reentrena un modelo combinando datos históricos almacenados y nuevos datos.
-    
-    Parámetros:
-    - current_model: modelo actual (no se usa directamente, solo para compatibilidad)
-    - X_new: DataFrame o lista con los textos nuevos
-    - y_new: etiquetas nuevas
-    - history_path: ruta del CSV con los datos históricos
-    
-    Retorna:
-    - modelo nuevo reentrenado con todo el dataset
-    - métricas sobre los datos combinados
     """
     # Asegurar estructura
     X_df_new = X_new if isinstance(X_new, pd.DataFrame) else pd.DataFrame({"textos": X_new})
@@ -193,9 +184,7 @@ def cumulative_retrain(current_model, X_new, y_new, history_path="docs/dataset_b
     return fresh, compute_metrics(fresh)
 
 
-
 retrain_strategies = {
-    "incremental": incremental_retrain,
     "full": full_retrain,
     "ensemble": ensemble_retrain,
     "cumulative": cumulative_retrain

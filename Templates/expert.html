@@ -181,12 +181,11 @@ ta.addEventListener("input", autoResize);
 /* ---------- Ejemplo ---------- */
 $("#btnExample").addEventListener("click", ()=>{
   const sample = [
-    {"Textos_espanol":"La definición de privación está basada en el marco de los derechos de la niñez...","label":"ODS1"},
-    {"Textos_espanol":"La mayoría de los programas de protección social en Ghana aspiran a ser universales...","label":"ODS1"},
+    {"Textos_espanol":"La definición de pobreza está basada en el marco de la desigualdad social...","label":"ODS1"},
+    {"Textos_espanol":"La mayoría de los programas de protección social y superación de la pobreza en Ghana aspiran a ser universales...","label":"ODS1"},
     {"Textos_espanol":"La libertad de los pacientes para elegir médicos de cabecera y especialistas...","label":"ODS3"},
-    {"Textos_espanol":"El análisis de patrones de consumo de sustancias en estudiantes de secundaria...","label":"ODS3"},
-    {"Textos_espanol":"La rúbrica Studio Thinking estaba probablemente más enfocada...","label":"ODS4"},
-    {"Textos_espanol":"La rúbrica de los cinco hábitos creativos de la mente se utilizó como herramienta...","label":"ODS4"}
+    {"Textos_espanol":"El aumento del consumo de sustancias psicoactivas entre los jóvenes es por falta de escolarización y apoyo...","label":"ODS4"},
+    {"Textos_espanol":"La rúbrica Studio Thinking estaba probablemente más enfocada...","label":"ODS4"}
   ];
   ta.value = sample.map(o => JSON.stringify(o)).join("\n");
   autoResize();
