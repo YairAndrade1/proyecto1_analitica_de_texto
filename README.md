@@ -20,6 +20,11 @@ Entrar en el repositorio
 ```
 cd proyecto1_analitica_de_texto
 ```
+Instalar dependencias
+```
+pip install Flask
+pip install flask_cors
+```
 Correr la aplicación
 ```
 python app.py
