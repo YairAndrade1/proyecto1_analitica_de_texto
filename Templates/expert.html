@@ -72,10 +72,9 @@
         <div>
           <label class="sub" for="strategy">Estrategia:&nbsp;</label>
           <select id="strategy">
-            <option value="full">full (desde cero)</option>
-            <option value="ensemble">ensemble</option>
-            <option value="incremental">incremental</option>
-            <option value="cumulative">cumulative</option>
+            <option value="full">full (Reentrena desde cero solo con los datos que ingrese)</option>
+            <option value="ensemble">ensemble (votación de modelos)</option>
+            <option value="cumulative">cumulative (Recomendada: Reentrenamiento desde cero con datos nuevos+anteriores)</option>
           </select>
         </div>
         <div class="right">
@@ -120,6 +119,42 @@
 
       <pre id="raw" class="raw sub">Sin ejecutar…</pre>
     </section>
+    <section class="card">
+  <h2 style="margin:0 0 8px 0">Comparativa de Estrategias de Reentrenamiento</h2>
+  <p class="sub">Selecciona la estrategia más adecuada según tus necesidades de actualización del modelo.</p>
+
+  <div class="strategy-grid">
+    <!-- FULL -->
+    <div class="strategy-card">
+      <h3>1. Full Retrain</h3>
+      <p><b>Descripción:</b> Entrena un modelo completamente nuevo <b>solo con los datos nuevos</b> proporcionados.</p>
+      <ul>
+        <li><b>Ventajas:</b> Simple, limpia posibles sesgos del modelo anterior.</li>
+        <li><b>Desventajas:</b> Ignora el conocimiento previo; puede perder generalización, y si se ingresan muy pocos datos queda un modelo mediocre.</li>
+      </ul>
+    </div>
+
+    <!-- ENSEMBLE -->
+    <div class="strategy-card">
+      <h3>2. Ensemble Retrain</h3>
+      <p><b>Descripción:</b> Combina el modelo actual con uno nuevo mediante <b>votación mayoritaria</b>.</p>
+      <ul>
+        <li><b>Ventajas:</b> Aprovecha la experiencia previa y reduce riesgo de sobreajuste.</li>
+        <li><b>Desventajas:</b> Mayor complejidad; difícil interpretar resultados individuales. Además depende del modelo anterior, lo que puede ser un inconveniente si este no es confiable.</li>
+      </ul>
+    </div>
+
+    <!-- CUMULATIVE -->
+    <div class="strategy-card">
+      <h3>3. Cumulative Retrain</h3>
+      <p><b>Descripción:</b> Entrena desde cero con la <b>unión de los datos</b> históricos (datos etapa 1 balanceados con IA) y los nuevos.</p>
+      <ul>
+        <li><b>Ventajas:</b> Conserva conocimiento anterior, que sabemos que es valioso, e incorpora nuevos patrones con los datos nuevos que se ingresen. <b> Es la que recomendamos</b>.</li>
+        <li><b>Desventajas:</b> Requiere acceso al dataset histórico; puede ser más lenta.</li>
+      </ul>
+    </div>
+  </div>
+</section>
   </main>
 
 <script>

@@ -18,6 +18,8 @@ MODEL_PATH = os.getenv("MODEL_PATH", "docs/svm_pipeline_etapa2.joblib")
 SCHEMA_PATH = os.getenv("SCHEMA_PATH", "data/schema.json")
 
 # -------- Helpers --------
+
+# Convierte etiquetas a formato consistente
 def canon_label(lbl):
     if lbl is None: return None
     s = str(lbl).strip().lower().replace(" ", "")
@@ -26,6 +28,7 @@ def canon_label(lbl):
          "ods4":"ODS4","od4":"ODS4","4":"ODS4"}
     return m.get(s, str(lbl).upper())
 
+# Carga esquema de datos (columnas, target)
 def load_schema():
     try:
         with open(SCHEMA_PATH, "r") as f: return json.load(f)
@@ -35,6 +38,7 @@ def load_schema():
         with open(SCHEMA_PATH, "w") as f: json.dump(default, f, indent=2)
         return default
 
+# Asegura que el DataFrame tenga las columnas correctas y tipos adecuados
 def coerce_columns(df, schema):
     df = df.copy()
     if "textos" not in df.columns and "Textos_espanol" in df.columns:
@@ -43,6 +47,7 @@ def coerce_columns(df, schema):
         if c in df.columns: df[c] = df[c].fillna("").astype(str)
     return df
 
+# Parsea el payload de /retrain y devuelve DataFrame con textos y labels
 def parse_retrain_payload(data, schema):
     if "training_data" in data:  # legacy
         df = pd.DataFrame(data["training_data"])
@@ -79,6 +84,7 @@ _spanish_stopwords = set(stopwords.words("spanish")) if 'stopwords' in globals()
 _wpt = WordPunctTokenizer()
 _stem = SnowballStemmer("spanish")
 
+# Normaliza texto: limpieza, tokenización, stopwords, stemming
 def _normalize_text(doc: str) -> str:
     if not isinstance(doc, str):
         doc = "" if doc is None else str(doc)
@@ -90,6 +96,7 @@ def _normalize_text(doc: str) -> str:
     filtered = [_stem.stem(tok) for tok in tokens if tok not in _spanish_stopwords]
     return ' '.join(filtered)
 
+# Vectorized normalization, compatible con FunctionTransformer
 def norm_all_data(data):
     """
     Shim compatible con FunctionTransformer(norm_all_data):
@@ -102,6 +109,7 @@ def norm_all_data(data):
     except Exception:
         return v(np.array(data, dtype=str))
 
+# Carga el modelo desde disco, si existe
 def load_model():
     if os.path.exists(MODEL_PATH):
         try:
@@ -120,6 +128,8 @@ def load_model():
 model = load_model()
 
 # -------- Endpoints --------
+
+# Endpoint para revisar estado del modelo
 @app.get("/health")
 def health():
     return jsonify({
@@ -128,6 +138,7 @@ def health():
         "timestamp": datetime.now().isoformat()
     })
 
+# Endpoint para predecir nuevas instancias
 @app.post("/predict")
 def predict():
     try:
@@ -146,6 +157,7 @@ def predict():
     except Exception as e:
         return jsonify({"error": f"Prediction failed: {e}"}), 500
 
+# Endpoint para reentrenar el modelo con nuevos datos: Ofrece tres estrategias
 @app.post("/retrain")
 def retrain():
     global model
@@ -170,44 +182,39 @@ def retrain():
     except Exception as e:
         return jsonify({"error": f"Retraining failed: {e}"}), 500
     
+# Endpoint para obtener información del modelo cargado
 @app.get("/model/info")
 def model_info():
     if model is None:
         return jsonify({"error": "Modelo no disponible"}), 500
+
     info = {
         "type": type(model).__name__,
         "loaded_from": MODEL_PATH,
         "steps": [],
-        "has_tfidf_idf": None,
+        "parameters": {},
         "sklearn_version": __import__("sklearn").__version__,
     }
+
     if hasattr(model, "steps"):
         info["steps"] = [name for name, _ in model.steps]
         try:
-            tfidf = dict(model.steps).get("tfidf")
-            info["has_tfidf_idf"] = hasattr(tfidf, "idf_")
+            params = model.get_params(deep=True)
+            info["parameters"] = {k: str(v) for k, v in params.items()}
         except Exception:
-            info["has_tfidf_idf"] = False
+            info["parameters"] = {"error": "No se pudieron obtener los parámetros"}
+
     return jsonify(info), 200
 
-@app.post("/model/sanity")
-def model_sanity():
-    """Prueba una predicción mínima para detectar errores de vectorizador no fitted."""
-    try:
-        X = pd.Series(["vacunación en el barrio", "educación primaria", "pobreza extrema"])
-        _ = model.predict(X)
-        return jsonify({"ok": True}), 200
-    except Exception as e:
-        return jsonify({"ok": False, "error": str(e)}), 500
-    
+# Rutas para usuario normal: puede predecir  
 @app.route("/")
 def home():
     return render_template("index.html")
 
+# Ruta para experto: puede reentrenar
 @app.route("/expert")
 def expert():
     return render_template("expert.html")
-
 
 
 if __name__ == "__main__":
