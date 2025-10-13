@@ -58,7 +58,16 @@ class TextNormalizer(BaseEstimator, TransformerMixin):
     def transform(self, X):
         return np.array([normalize_text(t) for t in X])
 
-def compute_metrics(y_true, y_pred) -> Dict[str, float]:
+def compute_metrics(model, validation_data_path="Datos_etapa 2.xlsx") -> Dict[str, float]:
+    df = pd.read_excel(validation_data_path)
+    if "labels" in df.columns:
+        y_true = df["labels"].apply(canon_label)
+    elif "label" in df.columns:
+        y_true = df["label"].apply(canon_label)
+    else:
+        raise ValueError("El archivo de validación debe tener columna 'labels' o 'label'.")
+    y_pred = model.predict(df["textos"])
+    
     pm, rm, fm, _ = precision_recall_fscore_support(y_true, y_pred, average="macro", zero_division=0)
     return {"precision": float(pm), "recall": float(rm), "f1_score": float(fm)}
 
@@ -127,7 +136,7 @@ def full_retrain(current_model, X_new, y_new):
     y_vec = [canon_label(v) for v in y_new]
     fresh.fit(X_df, y_vec)
     y_pred = fresh.predict(X_df)
-    return fresh, compute_metrics(y_vec, y_pred)
+    return fresh, compute_metrics(fresh)
 
 def ensemble_retrain(current_model, X_new, y_new):
     fresh, _ = full_retrain(None, X_new, y_new)
@@ -138,12 +147,58 @@ def ensemble_retrain(current_model, X_new, y_new):
     ens = SimpleEnsemble(current_model, fresh)
     X_df = X_new if isinstance(X_new, pd.DataFrame) else pd.DataFrame({"textos": X_new})
     y_pred = ens.predict(X_df)
-    return ens, compute_metrics([canon_label(v) for v in y_new], y_pred)
+    return ens, compute_metrics(ens)
+
+def cumulative_retrain(current_model, X_new, y_new, history_path="docs/dataset_balanceado_etapa2.csv"):
+    """
+    Reentrena un modelo combinando datos históricos almacenados y nuevos datos.
+    
+    Parámetros:
+    - current_model: modelo actual (no se usa directamente, solo para compatibilidad)
+    - X_new: DataFrame o lista con los textos nuevos
+    - y_new: etiquetas nuevas
+    - history_path: ruta del CSV con los datos históricos
+    
+    Retorna:
+    - modelo nuevo reentrenado con todo el dataset
+    - métricas sobre los datos combinados
+    """
+    # Asegurar estructura
+    X_df_new = X_new if isinstance(X_new, pd.DataFrame) else pd.DataFrame({"textos": X_new})
+    y_df_new = pd.Series([canon_label(v) for v in y_new], name="labels")
+
+    # Cargar históricos si existen
+    if os.path.exists(history_path):
+        hist = pd.read_csv(history_path)
+        print(f"Cargados {len(hist)} ejemplos históricos desde {history_path}")
+        X_df_hist = hist[["textos"]]
+        y_df_hist = hist["labels"]
+        # Combinar
+        X_all = pd.concat([X_df_hist, X_df_new], ignore_index=True)
+        y_all = pd.concat([y_df_hist, y_df_new], ignore_index=True)
+    else:
+        print("No se encontró dataset histórico, entrenando solo con los datos nuevos.")
+        X_all, y_all = X_df_new, y_df_new
+
+    X_all = X_all if isinstance(X_new, pd.DataFrame) else pd.DataFrame({"textos": X_new})
+    y_all = pd.Series([canon_label(v) for v in y_all], name="labels")
+    #revisar df, y labels
+    print(f"Total de datos para reentrenar: {len(X_all)} ejemplos.")
+    print("Distribución de clases:\n", y_all.value_counts())
+
+    # Entrenar nuevo modelo con todo
+    fresh = create_pipeline_svm()
+    fresh.fit(X_all, y_all)
+    y_pred = fresh.predict(X_all)
+    return fresh, compute_metrics(fresh)
+
+
 
 retrain_strategies = {
     "incremental": incremental_retrain,
     "full": full_retrain,
-    "ensemble": ensemble_retrain
+    "ensemble": ensemble_retrain,
+    "cumulative": cumulative_retrain
 }
 
 def save_model(model: Pipeline, path: str):
@@ -153,3 +208,5 @@ def save_model(model: Pipeline, path: str):
 def load_model(path: str) -> Pipeline:
     from models.model_pipeline import ColumnMapper, TextNormalizer, SimpleEnsemble  # noqa
     return joblib.load(path)
+
+

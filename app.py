@@ -14,7 +14,7 @@ from nltk.stem.snowball import SnowballStemmer
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
-MODEL_PATH = os.getenv("MODEL_PATH", "svm_pipeline_etapa2.joblib")
+MODEL_PATH = os.getenv("MODEL_PATH", "docs/svm_pipeline_etapa2.joblib")
 SCHEMA_PATH = os.getenv("SCHEMA_PATH", "data/schema.json")
 
 # -------- Helpers --------
